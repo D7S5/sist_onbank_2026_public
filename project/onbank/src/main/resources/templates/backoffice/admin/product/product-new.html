@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{backoffice/layout/admin}">
+<head>
+    <title>상품 등록</title>
+</head>
+<body>
+<div layout:fragment="breadcrumb">관리자 콘솔 / 상품 · 대출 / 상품 관리 / 상품 등록</div>
+<h1 layout:fragment="page-title">상품 등록</h1>
+<main layout:fragment="content">
+    <section class="adm-card adm-form-card">
+
+        <!-- th:action 이 CSRF 토큰을 자동으로 넣는다. 칸은 팀원3 savings_product 기준 -->
+        <form class="adm-form" method="post" th:action="@{/admin/products}" th:object="${form}">
+            <div class="adm-alert" role="alert" th:if="${#fields.hasGlobalErrors()}" th:text="${#fields.globalErrors()[0]}"></div>
+            <p class="adm-note">등록하면 바로 판매중으로 저장됩니다. 금액은 정기예금은 처음 맡기는 금액, 정기적금은 매달 넣는 금액의 범위입니다.</p>
+
+            <div class="adm-field">
+                <label for="productName">상품명 (필수)</label>
+                <input type="text" id="productName" th:field="*{productName}" maxlength="120">
+                <span class="adm-error" th:if="${#fields.hasErrors('productName')}" th:text="${#fields.errors('productName')[0]}"></span>
+            </div>
+
+            <div class="adm-field">
+                <label for="productType">유형 (필수)</label>
+                <select id="productType" th:field="*{productType}">
+                    <option value="">선택하세요</option>
+                    <option value="FIXED_DEPOSIT">정기예금 · 목돈을 한 번에 맡김</option>
+                    <option value="INSTALLMENT_SAVINGS">정기적금 · 매달 넣음</option>
+                </select>
+                <span class="adm-error" th:if="${#fields.hasErrors('productType')}" th:text="${#fields.errors('productType')[0]}"></span>
+            </div>
+
+            <div class="adm-field">
+                <label for="annualRate">연이율 (%, 필수)</label>
+                <input type="number" id="annualRate" th:field="*{annualRate}" step="0.0001" min="0" max="100" placeholder="예: 3.5">
+                <span class="adm-error" th:if="${#fields.hasErrors('annualRate')}" th:text="${#fields.errors('annualRate')[0]}"></span>
+            </div>
+
+            <div class="adm-field">
+                <label for="termMonths">가입기간 (개월, 필수)</label>
+                <input type="number" id="termMonths" th:field="*{termMonths}" min="1" max="120" placeholder="예: 12">
+                <span class="adm-error" th:if="${#fields.hasErrors('termMonths')}" th:text="${#fields.errors('termMonths')[0]}"></span>
+            </div>
+
+            <div class="adm-field">
+                <label for="minAmount">최소 금액 (원, 필수)</label>
+                <input type="number" id="minAmount" th:field="*{minAmount}" min="1" step="1" placeholder="예: 100000">
+                <span class="adm-error" th:if="${#fields.hasErrors('minAmount')}" th:text="${#fields.errors('minAmount')[0]}"></span>
+            </div>
+
+            <div class="adm-field">
+                <label for="maxAmount">최대 금액 (원, 필수)</label>
+                <input type="number" id="maxAmount" th:field="*{maxAmount}" min="1" step="1" placeholder="예: 10000000">
+                <span class="adm-error" th:if="${#fields.hasErrors('maxAmount')}" th:text="${#fields.errors('maxAmount')[0]}"></span>
+            </div>
+
+            <div class="adm-form-btns">
+                <a class="adm-btn adm-btn-link" th:href="@{/admin/products}">취소</a>
+                <button type="submit" class="adm-btn-primary">상품 등록</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

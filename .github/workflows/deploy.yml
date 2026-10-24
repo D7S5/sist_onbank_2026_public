@@ -1,0 +1,96 @@
+name: Deploy to Ubuntu Server
+
+# 기존 AWS 서버 jar 배포. cafe24 Docker 배포(docker-deploy.yml)로 바꾸면서 수동 실행만 가능하게 함
+on:
+  workflow_dispatch:
+
+env:
+  SERVER_IP: 3.107.31.238
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project/onbank   
+        
+    steps:
+    # 코드 체크아웃(가져오기)
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    # JDK 21 설정
+    - name: Set up JDK 21
+      uses: actions/setup-java@v1
+      with:
+        java-version: '21'
+
+    # gradlew 권한 설정
+    - name: Set gradlew permissions
+      run: |
+        chmod +x ./gradlew
+
+    - name: Create application-local.properties
+      run: |
+        echo "${{ secrets.APPLICATION_LOCAL_PROPERTIES }}" > src/main/resources/application-local.properties
+
+    # 서버 포트를 8000으로 변경 (Git의 application.properties는 그대로 80)
+    - name: Change server port to 8000
+      run: |
+        sed -i 's/^server\.port=.*/server.port=8000/' src/main/resources/application.properties
+        grep '^server.port' src/main/resources/application.properties
+
+    # gradle 빌드
+    - name: Build with Gradle
+      run: ./gradlew build -x test
+
+    - name: Set SSH key permissions
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+    - name: Add SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+
+
+    - name: Add known_hosts
+      run: |
+        ssh-keyscan "$SERVER_IP" >> ~/.ssh/known_hosts
+
+    #- name: 기존프로세스 종료
+    #  run: |
+    #    kill -9 $(ps -ef | grep devops | grep -v grep | head -n 1 | awk '{print $2}') || true
+
+    - name: Deploy to Server with rsync
+      run: | 
+         rsync -avz -e "ssh -o StrictHostKeyChecking=no" build/libs/*.jar ubuntu@$SERVER_IP:~/onbank
+
+
+    - name: Run SSH commands
+      run: |
+        ssh -i ~/.ssh/id_ed25519 ubuntu@$SERVER_IP << 'EOF'
+          pkill -f 'java -jar' || true
+          nohup java -jar ~/onbank/onbank-0.0.1-SNAPSHOT.jar > log.txt 2>&1 &
+        EOF
+
+    # Slack 알림 (성공/실패 모두 전송)
+    - name: Notify Slack
+      if: always()
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        STATUS: ${{ job.status }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        COMMITS: ${{ toJSON(github.event.commits) }}
+      run: |
+        if [ -z "$SLACK_WEBHOOK_URL" ]; then
+          echo "SLACK_WEBHOOK_URL 이 없어 알림을 건너뜁니다."
+          exit 0
+        fi
+        if [ "$STATUS" = "success" ]; then ICON=":white_check_mark:"; else ICON=":x:"; fi
+        # 이번 push에 포함된 커밋 목록 (커밋 메시지 첫 줄, 최대 10개). 수동 실행이면 비어 있음
+        CHANGES=$(echo "$COMMITS" | jq -r '(. // [])[-10:][] |"• <\(.url)|\(.id[0:7])> \(.message | split("\n")[0]) - \(.author.name)"')
+        TEXT="$ICON onbank 배포 $STATUS ($GITHUB_ACTOR) <$RUN_URL|실행 로그>"$'\n'"$CHANGES"
+        jq -n --arg text "$TEXT" '{text: $text}' | curl -sS -X POST -H 'Content-Type: application/json' -d @- "$SLACK_WEBHOOK_URL"

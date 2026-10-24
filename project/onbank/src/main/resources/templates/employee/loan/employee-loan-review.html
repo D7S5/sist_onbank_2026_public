@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대출 심사 관리 - ONBANK EMPLOYEE</title>
+<link rel="stylesheet" th:href="@{/css/index.css}">
+<link rel="stylesheet" th:href="@{/css/loan/employee-loan-review.css}">
+<link rel="stylesheet" th:href="@{/css/loan/employee-loan-review-completed.css}">
+</head>
+<body>
+	<div th:replace="~{fragments/header :: headerFragment}"></div>
+	<main class="admin-loan-page">
+		<div class="admin-loan-container">
+			<header class="admin-loan-heading">
+				<span class="page-label">ONBANK EMPLOYEE</span>
+				<h1>대출 심사 관리</h1>
+				<p>신청 내역을 조회하고 심사 및 승인 여부를 처리합니다.</p>
+			</header>
+			<section class="review-summary">
+				<div class="review-summary-card">
+					<span>전체 신청</span><strong th:text="${totalCount}">0</strong>
+				</div>
+				<div class="review-summary-card">
+					<span>심사대기</span><strong th:text="${pendingCount}">0</strong>
+				</div>
+				<div class="review-summary-card">
+					<span>심사중</span><strong th:text="${reviewingCount}">0</strong>
+				</div>
+				<div class="review-summary-card">
+					<span>서류보완</span><strong th:text="${additionalCount}">0</strong>
+				</div>
+				<div class="review-summary-card">
+					<span>승인완료</span><strong th:text="${approvedCount}">0</strong>
+				</div>
+			</section>
+			<section class="review-list-section">
+				<div class="review-section-header">
+					<h2>대출 신청 목록</h2>
+					<form th:action="@{/employee/loans/review}" method="get">
+						<label for="statusFilter" class="sr-only">심사 상태 필터</label> <select
+							id="statusFilter" name="status" onchange="this.form.submit()">
+							<option value="">전체 상태</option>
+							<option th:each="s : ${statusValues}" th:value="${s.name()}"
+								th:selected="${currentStatus == s}"
+								th:text="${s.name() == 'PENDING' ? '심사대기' : s.name() == 'REVIEWING' ? '심사중' : s.name() == 'ADDITIONAL_INFO' ? '서류보완 요청' : s.name() == 'APPROVED' ? '승인완료' : s.name() == 'REJECTED' ? '심사거절' : s.name() == 'CANCELLED' ? '신청취소' : s.name() == 'EXECUTED' ? '대출 실행완료' : '승인기간 만료'}">
+								상태</option>
+						</select>
+					</form>
+				</div>
+				<div class="review-table-wrap">
+					<table class="review-table">
+						<thead>
+							<tr>
+								<th>신청번호</th>
+								<th>회원</th>
+								<th>상품명</th>
+								<th>신청금액</th>
+								<th>신청일</th>
+								<th>상태</th>
+								<th>관리</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="app : ${applications}">
+								<td th:text="${app.id}">-</td>
+								<td th:text="${app.member.name}">-</td>
+								<td th:text="${app.product.name}">-</td>
+								<td
+									th:text="|${#numbers.formatDecimal(app.requestedAmount, 1, 'COMMA', 0, 'POINT')}원|">-</td>
+								<td th:text="${#temporals.format(app.createdAt, 'yyyy.MM.dd')}">-</td>
+								<td><span class="review-status"
+									th:classappend="|status-${app.status.name().toLowerCase()}|"
+									th:text="${app.status.name() == 'PENDING' ? '심사대기' : app.status.name() == 'REVIEWING' ? '심사중' : app.status.name() == 'ADDITIONAL_INFO' ? '서류보완 요청' : app.status.name() == 'APPROVED' ? '승인완료' : app.status.name() == 'REJECTED' ? '심사거절' : app.status.name() == 'CANCELLED' ? '신청취소' : app.status.name() == 'EXECUTED' ? '대출 실행완료' : '승인기간 만료'}">
+										상태 </span></td>
+								<td><a class="review-detail-btn"
+									th:href="@{/employee/loans/review/{id}(id=${app.id})}">심사
+										상세</a></td>
+							</tr>
+							<tr th:if="${#lists.isEmpty(applications)}">
+								<td colspan="7" class="empty-row">해당 상태의 대출 신청이 없습니다.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+		</div>
+	</main>
+	<div th:replace="~{fragments/footer :: footerFragment}"></div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+	plugins {
+		id 'java'
+		id 'org.springframework.boot' version '4.1.1'
+		id 'io.spring.dependency-management' version '1.1.7'
+	}
+
+	group = 'org.doit'
+	version = '0.0.1-SNAPSHOT'
+	description = 'onbankproject'
+
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(21)
+		}
+	}
+	
+	jar { 
+		enabled = false 
+	}
+
+	repositories {
+		mavenCentral()
+	}
+
+	dependencies {
+		implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+		implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+		compileOnly 'org.projectlombok:lombok'
+		developmentOnly 'org.springframework.boot:spring-boot-devtools'
+		runtimeOnly 'com.mysql:mysql-connector-j'
+		annotationProcessor 'org.projectlombok:lombok'
+		testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+		testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+		testCompileOnly 'org.projectlombok:lombok'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+		testAnnotationProcessor 'org.projectlombok:lombok'
+		implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+		// 관리자 화면 공통 레이아웃 (layout: decoration)
+		implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect'
+
+		implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+		// Spring Security (로그인/로그아웃, 권한)
+		implementation 'org.springframework.boot:spring-boot-starter-security'
+		implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'	// 화면에서 sec: 속성 사용
+		testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+		
+		implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+		// FDS: 이체·출금 메서드 실행 뒤 탐지를 끼워 넣는 AOP (Boot 4에서 -aop → -aspectj로 이름 바뀜)
+		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+	}
+
+	tasks.named('test') {
+		useJUnitPlatform()
+	}

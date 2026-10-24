@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!-- 관리자 화면 공통 틀 (와이어프레임 2장). 화면은 layout:decorate="~{backoffice/layout/admin}" 로 본문만 쓴다 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title layout:title-pattern="$CONTENT_TITLE - ONBANK 관리자">ONBANK 관리자</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+    <link rel="stylesheet" th:href="@{/css/backoffice/admin.css}">
+</head>
+<body>
+<div class="adm-wrap">
+    <nav th:replace="~{backoffice/fragments/admin-sidebar :: sidebar}"></nav>
+
+    <div class="adm-body">
+        <header class="adm-header">
+            <div>
+                <div class="adm-breadcrumb" layout:fragment="breadcrumb">관리자 콘솔</div>
+                <h1 class="adm-page-title" layout:fragment="page-title">페이지 제목</h1>
+            </div>
+            <div class="adm-header-right">
+                <!-- 알림 목록(S-18). 배지 = 미확인 개수, admin-notification.js 가 3초마다 갱신 (MON-001) -->
+                <a class="adm-bell" th:href="@{/admin/notifications}" aria-label="알림 목록">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222222" stroke-width="1.6"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"></path>
+                        <path d="M10 20a2 2 0 0 0 4 0"></path>
+                    </svg>
+                    <span class="adm-bell-badge js-bell-badge" hidden></span>
+                </a>
+                <div class="adm-user">
+                    <!-- 이름 첫 글자 (principal.name = 팀원1 AdminPrincipal) -->
+                    <div class="adm-avatar" aria-hidden="true"
+                         th:text="${#strings.substring(#authentication.principal.name, 0, 1)}">이</div>
+                    <div>
+                        <!-- principal = 팀원1 AdminPrincipal (getName, getRole) -->
+                        <div class="adm-user-name" sec:authentication="principal.name">이름</div>
+                        <div class="adm-user-role" sec:authentication="principal.role">역할</div>
+                    </div>
+                </div>
+                <!-- 로그아웃은 POST (CSRF 토큰은 th:action이 자동으로 넣음) -->
+                <form th:action="@{/admin/logout}" method="post">
+                    <button type="submit" class="adm-btn">로그아웃</button>
+                </form>
+            </div>
+        </header>
+
+        <main class="adm-main" layout:fragment="content">
+            본문 자리
+        </main>
+    </div>
+</div>
+<!-- MON-001 새 알림 토스트 자리 (A안). 3초 폴링 API 주소는 data-url, 탭 저장 구분용 관리자 번호는 data-admin-id, 토스트를 누르면 갈 탐지 상세 앞주소는 data-fds-url -->
+<div class="adm-toasts" id="admToasts" aria-live="polite"
+     th:data-url="@{/admin/api/notifications}"
+     th:data-admin-id="${#authentication.principal.adminId}"
+     th:data-fds-url="@{/admin/fds}"></div>
+<script th:src="@{/js/admin-notification.js}"></script>
+</body>
+</html>
